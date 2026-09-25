@@ -23,6 +23,7 @@ load_dotenv()
 TOP_K = 5
 TOP_P = 0.9
 TEMPERATURE = 0.3
+SAFE_REFUSAL = "Tôi không thể xác minh thông tin này từ nguồn hiện có."
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")
 LLM_MODEL = os.getenv("LLM_MODEL", "")
@@ -115,10 +116,13 @@ def generate_with_citation(query: str, top_k: int = TOP_K) -> dict:
     # }
     chunks = retrieve(query, top_k=top_k)
     if not chunks:
-        return {"answer": "Tôi không thể xác minh thông tin này từ nguồn hiện có.", "sources": [], "retrieval_source": "none"}
+        return {"answer": SAFE_REFUSAL, "sources": [], "retrieval_source": "none"}
     context = format_context(reorder_for_llm(chunks))
-    answer = call_llm(SYSTEM_PROMPT, f"Context:\n{context}\n\nQuestion: {query}")
-    return {"answer": answer or "Tôi không thể xác minh thông tin này từ nguồn hiện có.",
+    try:
+        answer = call_llm(SYSTEM_PROMPT, f"Context:\n{context}\n\nQuestion: {query}")
+    except Exception:
+        answer = ""
+    return {"answer": answer or SAFE_REFUSAL,
             "sources": chunks, "retrieval_source": chunks[0]["retrieval_method"]}
 
 

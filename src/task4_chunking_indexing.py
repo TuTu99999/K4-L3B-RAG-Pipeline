@@ -42,10 +42,10 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
     load_dotenv()
     provider = os.getenv("EMBEDDING_PROVIDER", "sentence_transformers").lower()
     if provider == "sentence_transformers":
-        from sentence_transformers import SentenceTransformer
-
         model_name = os.getenv("EMBEDDING_MODEL", EMBEDDING_MODEL)
         try:
+            from sentence_transformers import SentenceTransformer
+
             if not hasattr(embed_texts, "_model") or embed_texts._model_name != model_name:
                 embed_texts._model = SentenceTransformer(model_name, local_files_only=True)
                 embed_texts._model_name = model_name
