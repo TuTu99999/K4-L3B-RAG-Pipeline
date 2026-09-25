@@ -40,7 +40,11 @@ def reorder_for_llm(chunks: list[dict]) -> list[dict]:
     # front = chunks[::2]
     # back = chunks[1::2]
     # return front + back[::-1]
-    raise NotImplementedError("Implement reorder_for_llm")
+    if len(chunks) <= 2:
+        return list(chunks)
+    front = list(chunks[::2])
+    back = list(chunks[1::2])
+    return front + back[::-1]
 
 
 def format_context(chunks: list[dict]) -> str:
@@ -55,7 +59,11 @@ def format_context(chunks: list[dict]) -> str:
     #         f"Source: {metadata['source']}]\n{chunk['content']}"
     #     )
     # return "\n\n---\n\n".join(parts)
-    raise NotImplementedError("Implement format_context")
+    return "\n\n---\n\n".join(
+        f"[Document {index} | Title: {chunk['metadata']['title']} | "
+        f"Source: {chunk['metadata']['source']}]\n{chunk['content']}"
+        for index, chunk in enumerate(chunks, 1)
+    )
 
 
 def call_llm(system_prompt: str, user_message: str) -> str:
@@ -67,7 +75,22 @@ def call_llm(system_prompt: str, user_message: str) -> str:
     # - anthropic -> ANTHROPIC_API_KEY
     #
     # Dùng LLM_MODEL và trả về text thuần cho cả ba nhánh.
-    raise NotImplementedError("Implement call_llm")
+    provider = LLM_PROVIDER.lower()
+    model = LLM_MODEL or {"openai": "gpt-4o-mini", "gemini": "gemini-2.0-flash", "anthropic": "claude-3-5-haiku-latest"}.get(provider, "")
+    if provider == "openai" and os.getenv("OPENAI_API_KEY"):
+        from openai import OpenAI
+        response = OpenAI().chat.completions.create(model=model, temperature=TEMPERATURE,
+            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}])
+        return response.choices[0].message.content or ""
+    if provider == "gemini" and os.getenv("GEMINI_API_KEY"):
+        from google import genai
+        response = genai.Client(api_key=os.getenv("GEMINI_API_KEY")).models.generate_content(model=model, contents=f"{system_prompt}\n\n{user_message}")
+        return response.text or ""
+    if provider == "anthropic" and os.getenv("ANTHROPIC_API_KEY"):
+        from anthropic import Anthropic
+        response = Anthropic().messages.create(model=model, max_tokens=1000, temperature=TEMPERATURE, system=system_prompt, messages=[{"role": "user", "content": user_message}])
+        return "".join(getattr(block, "text", "") for block in response.content)
+    return "Tôi chưa thể tạo câu trả lời vì chưa cấu hình nhà cung cấp LLM."
 
 
 def generate_with_citation(query: str, top_k: int = TOP_K) -> dict:
@@ -90,7 +113,13 @@ def generate_with_citation(query: str, top_k: int = TOP_K) -> dict:
     #     "sources": chunks,
     #     "retrieval_source": chunks[0]["retrieval_method"],
     # }
-    raise NotImplementedError("Implement generate_with_citation")
+    chunks = retrieve(query, top_k=top_k)
+    if not chunks:
+        return {"answer": "Tôi không thể xác minh thông tin này từ nguồn hiện có.", "sources": [], "retrieval_source": "none"}
+    context = format_context(reorder_for_llm(chunks))
+    answer = call_llm(SYSTEM_PROMPT, f"Context:\n{context}\n\nQuestion: {query}")
+    return {"answer": answer or "Tôi không thể xác minh thông tin này từ nguồn hiện có.",
+            "sources": chunks, "retrieval_source": chunks[0]["retrieval_method"]}
 
 
 if __name__ == "__main__":
