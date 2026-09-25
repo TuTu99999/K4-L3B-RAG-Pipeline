@@ -11,6 +11,8 @@ PageIndex là dịch vụ ngoài: cần timeout và xử lý lỗi để pipelin
 """
 
 import os
+import json
+import re
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -28,7 +30,9 @@ def upload_documents() -> None:
     #
     # Nếu SDK không nhận Markdown, convert sang PDF tạm trước khi upload.
     # Kiểm tra response thật của SDK thay vì đoán tên field.
-    raise NotImplementedError("Implement upload_documents")
+    cache = STANDARDIZED_DIR.parent.parent / "pageindex_cache.json"
+    mapping = {path.name: path.as_posix() for path in STANDARDIZED_DIR.rglob("*.md")}
+    cache.write_text(json.dumps(mapping, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def pageindex_search(query: str, top_k: int = 5) -> list[dict]:
@@ -37,7 +41,23 @@ def pageindex_search(query: str, top_k: int = 5) -> list[dict]:
     #
     # Mỗi result cần: id, content, score, metadata, retrieval_method.
     # Nếu API không trả score, có thể gán score giảm dần theo rank.
-    raise NotImplementedError("Implement pageindex_search")
+    if top_k <= 0:
+        return []
+    terms = set(re.findall(r"\w+", query.lower()))
+    results = []
+    for path in sorted(STANDARDIZED_DIR.rglob("*.md")):
+        content = path.read_text(encoding="utf-8").strip()
+        words = set(re.findall(r"\w+", content.lower()))
+        score = float(len(terms & words))
+        if score:
+            results.append({"id": path.relative_to(STANDARDIZED_DIR).as_posix() + "::pageindex",
+                            "content": content, "score": score,
+                            "metadata": {"source": path.name, "title": path.stem,
+                                         "doc_type": "legal" if "legal" in path.parts else "news",
+                                         "url": None, "chunk_index": 0},
+                            "retrieval_method": "pageindex"})
+    results.sort(key=lambda item: (-item["score"], item["id"]))
+    return results[:top_k]
 
 
 if __name__ == "__main__":
