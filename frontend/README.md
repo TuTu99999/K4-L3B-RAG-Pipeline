@@ -1,4 +1,4 @@
-# TravelBot RAG Frontend (React + Vite)
+# TravelBot RAG Frontend
 
 Giao diện trực quan hiện đại cho hệ thống RAG Pipeline (TravelBot).
 
