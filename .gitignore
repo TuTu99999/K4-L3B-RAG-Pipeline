@@ -13,6 +13,7 @@ ENV/
 # Packaging / build artifacts
 build/
 dist/
+node_modules/
 .eggs/
 *.egg
 *.egg-info/
