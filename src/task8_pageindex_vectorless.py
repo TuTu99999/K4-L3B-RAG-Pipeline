@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import time
@@ -20,6 +21,26 @@ STANDARDIZED_DIR = ROOT / "data" / "standardized"
 CACHE_PATH = ROOT / "pageindex_cache.json"
 PDF_DIR = ROOT / "pageindex_pdfs"
 PAGEINDEX_TIMEOUT = float(os.getenv("PAGEINDEX_TIMEOUT", "30"))
+STOPWORDS = {
+    "ai", "bao", "bi", "cach", "cho", "co", "cua", "duoc", "gi", "gia",
+    "hay", "hom", "khi", "la", "mot", "nao", "nay", "nhung", "o", "tai",
+    "the", "thi", "va", "ve", "voi", "được", "cách", "cho", "có", "của",
+    "gì", "giá", "hôm", "khi", "là", "một", "nào", "nay", "những", "ở",
+    "tại", "thế", "thì", "và", "về", "với",
+}
+DOMAIN_TERMS = {
+    "ẩm", "thực", "ăn", "món", "khách", "sạn", "tour", "visa", "vé",
+    "du", "lịch", "lữ", "hành", "luật", "nghị", "định", "phạt", "quyền",
+    "hà", "nội", "ninh", "bình", "huế", "việt", "nam", "điểm", "đến",
+    "travel", "tourism", "hotel", "restaurant",
+}
+
+
+def _query_terms(query: str) -> set[str]:
+    return {
+        term for term in re.findall(r"\w+", query.lower())
+        if len(term) > 2 and term not in STOPWORDS
+    }
 
 
 def _metadata(path: Path) -> dict[str, Any]:
@@ -108,13 +129,16 @@ def upload_documents() -> None:
 
 
 def _local_search(query: str, top_k: int) -> list[dict]:
-    terms = set(re.findall(r"\w+", query.lower()))
+    terms = _query_terms(query)
+    if not terms & DOMAIN_TERMS:
+        return []
+    minimum_overlap = max(1, math.ceil(len(terms) * 0.6))
     results = []
     for path in sorted(STANDARDIZED_DIR.rglob("*.md")):
         content = path.read_text(encoding="utf-8").strip()
         words = set(re.findall(r"\w+", content.lower()))
         score = float(len(terms & words))
-        if score:
+        if score >= minimum_overlap:
             results.append(
                 {
                     "id": path.relative_to(STANDARDIZED_DIR).as_posix() + "::pageindex",
@@ -166,6 +190,8 @@ def _texts(value: Any) -> list[str]:
 def pageindex_search(query: str, top_k: int = 5) -> list[dict]:
     """Query PageIndex and return SearchResult-compatible records."""
     if top_k <= 0:
+        return []
+    if not _query_terms(query) & DOMAIN_TERMS:
         return []
     if not PAGEINDEX_API_KEY:
         return _local_search(query, top_k)

@@ -5,7 +5,8 @@
 - Họ và tên: Đồng Mạnh Hùng
 - Mã học viên: 2A202602412
 - Nhóm: 4aesieunhan
-- Repository/branch: K4-L3B-RAG-Pipeline / local working tree
+- Repository/branch: https://github.com/TuTu99999/K4-L3B-RAG-Pipeline/tree/Hung23020370
+- Commit chính: `09dbbb9` (`lan2`)
 
 ## Phần việc đã thực hiện
 
@@ -29,15 +30,14 @@
 
 ## Kiểm thử và kết quả
 
-- Chạy `python -m pytest tests/test_contracts.py -q`: **15 passed**.
-- Chạy `python -m pytest -q`: **19 passed, 1 failed** vì thiếu `group_project/evaluation/RESULT.md`, không phải lỗi ở 5 task phụ trách.
+- Chạy `python -m pytest -q`: **23 passed** trên bản tích hợp cuối.
 - Chạy Task 8 với PageIndex thật: 8 tài liệu được upload và nhận `doc_id`; truy vấn fallback trả kết quả có `retrieval_method="pageindex"`.
 - Chạy Task 9: truy vấn trả kết quả hybrid theo đúng schema.
 - Chạy Task 10: trả `GenerationResult`; khi thiếu/có lỗi LLM provider thì trả safe refusal thay vì làm pipeline crash.
 
 ## Điều còn hạn chế
 
-- Cần hoàn thiện `group_project/evaluation/RESULT.md` và chạy đủ A/B evaluation với 4 metric trên golden dataset.
+- Evaluation cuối đã hoàn thiện trong `group_project/evaluation/RESULT.md`; việc chạy lại cần quota LLM judge và có thể mất nhiều thời gian.
 - Task 2 phụ thuộc website, Chromium và Crawl4AI nên có thể thất bại nếu website thay đổi hoặc môi trường thiếu browser.
 - Task 8 phụ thuộc PageIndex API khi muốn dùng retrieval thật; local fallback chỉ là phương án chạy offline.
 - Nếu có thêm thời gian, thay đổi đầu tiên là viết evaluation runner tự động cho dense-only và hybrid + RRF, đồng thời đo latency và 4 metric.

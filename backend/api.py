@@ -43,12 +43,13 @@ class GenerateRequest(BaseModel):
     top_k:    int    = 5
     provider: str    = "openai"
     model:    str    = ""
+    threshold: float = 0.45
 
 
 class RetrieveRequest(BaseModel):
     query:  str
     top_k:  int = 5
-    method: str = "hybrid"   # "hybrid" | "pageindex"
+    method: str = "hybrid"   # "dense" | "bm25" | "hybrid" | "pageindex"
 
 
 # ─────────────────────────────────────────────
@@ -67,22 +68,12 @@ async def generate(req: GenerateRequest):
     os.environ["LLM_PROVIDER"] = req.provider
     if req.model:
         os.environ["LLM_MODEL"] = req.model
+    os.environ["SCORE_THRESHOLD"] = str(req.threshold)
 
     try:
         from src.task10_generation import generate_with_citation  # noqa: PLC0415
         result = generate_with_citation(req.query, top_k=req.top_k)
         return result
-    except NotImplementedError:
-        # Backend chưa implement — trả placeholder
-        return {
-            "answer": (
-                f"⚠️ **Backend chưa được implement.**\n\n"
-                f"Placeholder cho query: *\"{req.query}\"*.\n\n"
-                "Sau khi hoàn thiện `task4` → `task10`, API sẽ trả kết quả thật."
-            ),
-            "sources": [],
-            "retrieval_source": "none",
-        }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -94,11 +85,15 @@ async def retrieve(req: RetrieveRequest):
         if req.method == "pageindex":
             from src.task8_pageindex_vectorless import pageindex_search  # noqa: PLC0415
             chunks = pageindex_search(req.query, top_k=req.top_k)
+        elif req.method == "dense":
+            from src.task5_semantic_search import semantic_search  # noqa: PLC0415
+            chunks = semantic_search(req.query, top_k=req.top_k)
+        elif req.method == "bm25":
+            from src.task6_lexical_search import lexical_search  # noqa: PLC0415
+            chunks = lexical_search(req.query, top_k=req.top_k)
         else:
             from src.task9_retrieval_pipeline import retrieve as _retrieve  # noqa: PLC0415
             chunks = _retrieve(req.query, top_k=req.top_k, use_reranking=True)
         return {"chunks": chunks}
-    except NotImplementedError:
-        return {"chunks": []}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc

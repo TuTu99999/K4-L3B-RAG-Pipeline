@@ -18,29 +18,20 @@ from dotenv import load_dotenv
 from .task9_retrieval_pipeline import retrieve
 
 
-load_dotenv()
+load_dotenv(override=True)
 
 TOP_K = 5
 TOP_P = 0.9
 TEMPERATURE = 0.3
 SAFE_REFUSAL = "Tôi không thể xác minh thông tin này từ nguồn hiện có."
 
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")
-LLM_MODEL = os.getenv("LLM_MODEL", "")
-
 SYSTEM_PROMPT = """Trả lời chỉ từ context được cung cấp.
-Mỗi khẳng định phải có citation. Nếu thiếu evidence, hãy từ chối xác minh."""
+Mỗi khẳng định phải có citation dạng [1], [2] khớp với số của tài liệu.
+Không dùng kiến thức bên ngoài context. Nếu thiếu evidence, hãy từ chối xác minh."""
 
 
 def reorder_for_llm(chunks: list[dict]) -> list[dict]:
     """Đưa chunks quan trọng về đầu và cuối context."""
-    # TODO: Implement document reordering.
-    #
-    # if len(chunks) <= 2:
-    #     return list(chunks)
-    # front = chunks[::2]
-    # back = chunks[1::2]
-    # return front + back[::-1]
     if len(chunks) <= 2:
         return list(chunks)
     front = list(chunks[::2])
@@ -50,34 +41,17 @@ def reorder_for_llm(chunks: list[dict]) -> list[dict]:
 
 def format_context(chunks: list[dict]) -> str:
     """Tạo context có title và source label."""
-    # TODO: Format chunks để LLM tạo citation kiểm chứng được.
-    #
-    # parts = []
-    # for index, chunk in enumerate(chunks, 1):
-    #     metadata = chunk["metadata"]
-    #     parts.append(
-    #         f"[Document {index} | Title: {metadata['title']} | "
-    #         f"Source: {metadata['source']}]\n{chunk['content']}"
-    #     )
-    # return "\n\n---\n\n".join(parts)
     return "\n\n---\n\n".join(
-        f"[Document {index} | Title: {chunk['metadata']['title']} | "
-        f"Source: {chunk['metadata']['source']}]\n{chunk['content']}"
+        f"[{index}] Title: {chunk['metadata']['title']} | "
+        f"Source: {chunk['metadata']['source']}\n{chunk['content']}"
         for index, chunk in enumerate(chunks, 1)
     )
 
 
 def call_llm(system_prompt: str, user_message: str) -> str:
     """Gọi OpenAI, Gemini hoặc Anthropic theo cấu hình."""
-    # TODO: Dispatch theo LLM_PROVIDER.
-    #
-    # - openai    -> OPENAI_API_KEY
-    # - gemini    -> GEMINI_API_KEY
-    # - anthropic -> ANTHROPIC_API_KEY
-    #
-    # Dùng LLM_MODEL và trả về text thuần cho cả ba nhánh.
-    provider = LLM_PROVIDER.lower()
-    model = LLM_MODEL or {"openai": "gpt-4o-mini", "gemini": "gemini-2.0-flash", "anthropic": "claude-3-5-haiku-latest"}.get(provider, "")
+    provider = os.getenv("LLM_PROVIDER", "openai").lower()
+    model = os.getenv("LLM_MODEL", "") or {"openai": "gpt-4o-mini", "gemini": "gemini-2.0-flash", "anthropic": "claude-3-5-haiku-latest"}.get(provider, "")
     if provider == "openai" and os.getenv("OPENAI_API_KEY"):
         from openai import OpenAI
         response = OpenAI().chat.completions.create(model=model, temperature=TEMPERATURE,
@@ -96,34 +70,21 @@ def call_llm(system_prompt: str, user_message: str) -> str:
 
 def generate_with_citation(query: str, top_k: int = TOP_K) -> dict:
     """Trả về GenerationResult."""
-    # TODO: Implement end-to-end generation.
-    #
-    # chunks = retrieve(query, top_k=top_k)
-    # if not chunks:
-    #     return {
-    #         "answer": "Tôi không thể xác minh thông tin này từ nguồn hiện có.",
-    #         "sources": [],
-    #         "retrieval_source": "none",
-    #     }
-    # reordered = reorder_for_llm(chunks)
-    # context = format_context(reordered)
-    # user_message = f"Context:\n{context}\n\nQuestion: {query}"
-    # answer = call_llm(SYSTEM_PROMPT, user_message)
-    # return {
-    #     "answer": answer,
-    #     "sources": chunks,
-    #     "retrieval_source": chunks[0]["retrieval_method"],
-    # }
-    chunks = retrieve(query, top_k=top_k)
+    threshold = float(os.getenv("SCORE_THRESHOLD") or "0.45")
+    chunks = retrieve(query, top_k=top_k, score_threshold=threshold)
     if not chunks:
         return {"answer": SAFE_REFUSAL, "sources": [], "retrieval_source": "none"}
-    context = format_context(reorder_for_llm(chunks))
+    ordered_chunks = reorder_for_llm(chunks)
+    context = format_context(ordered_chunks)
     try:
         answer = call_llm(SYSTEM_PROMPT, f"Context:\n{context}\n\nQuestion: {query}")
     except Exception:
         answer = ""
-    return {"answer": answer or SAFE_REFUSAL,
-            "sources": chunks, "retrieval_source": chunks[0]["retrieval_method"]}
+    return {
+        "answer": answer or SAFE_REFUSAL,
+        "sources": ordered_chunks,
+        "retrieval_source": chunks[0]["retrieval_method"],
+    }
 
 
 if __name__ == "__main__":

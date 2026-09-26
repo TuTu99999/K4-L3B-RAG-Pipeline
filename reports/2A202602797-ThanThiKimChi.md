@@ -4,6 +4,7 @@
 - Mã học viên: 2A202602797
 - Nhóm: 4aesieunhan
 - Repository/branch: https://github.com/TuTu99999/K4-L3B-RAG-Pipeline/tree/chi
+- Commit code chính: `ff85510` (`feat(ui): complete React RAG UI and FastAPI backend bridge`)
 
 ---
 
@@ -33,12 +34,11 @@
 
 ## Kiểm thử và kết quả
 
-- **Test hoặc query tôi đã dùng:**
-  - *Truy vấn đúng phạm vi du lịch (In-domain):* `"Đà Lạt mùa đông"`, `"Lịch trình Phú Quốc 3N2Đ"`, `"Ẩm thực đặc sản Hội An"`, `"Hồ sơ xin visa du lịch Nhật Bản"`, `"Quy định quyền của khách du lịch"`.
-  - *Truy vấn ngoài phạm vi (Out-of-domain để kiểm tra Safe Refusal):* `"Sửa xe máy Wave thay bugi thế nào"`, `"Cách làm bánh pizza"`.
+- **Kiểm thử trên bản tích hợp cuối:** `npm run build` hoàn thành thành công và toàn bộ Python test đạt **23 passed**.
+- **Query live đã kiểm tra:** câu hỏi về địa điểm du lịch Hà Nội trả kết quả hybrid có URL nguồn; câu hỏi viết mã Python trả safe refusal với `retrieval_source="none"`.
 - **Kết quả trước/sau nếu có:**
   - *Trước:* Giao diện ban đầu của repo là Streamlit tối giản, chỉ có 1 ô chat đơn thuần, không có trích dẫn chi tiết, không có tab xem chunks và không có dashboard đánh giá metrics.
-  - *Sau:* Giao diện web hoàn chỉnh, thẩm mỹ cao; câu trả lời hiển thị trích dẫn nguồn rõ ràng; khi hỏi câu hỏi sửa xe, hệ thống hiển thị cảnh báo đỏ kích hoạt Safe Refusal (Cosine score 0.38 < Threshold 0.70) đúng theo tiêu chuẩn đề bài.
+  - *Sau:* Giao diện web hoàn chỉnh; câu trả lời hiển thị trích dẫn nguồn rõ ràng; ngưỡng production được hiệu chỉnh ở `0.45` và câu hỏi ngoài domain kích hoạt safe refusal.
 - **Lỗi đã phát hiện và cách xử lý:**
   - Lỗi chặn cổng mạng (CORS) khi React gọi sang FastAPI: Đã xử lý bằng cách cấu hình `CORSMiddleware` trong `backend/api.py`.
   - Lỗi giao diện bị sập khi Backend chưa chạy: Đã xử lý bằng `AbortSignal.timeout` và cơ chế tự động chuyển sang chế độ Demo dữ liệu mẫu trong `api/client.js`.

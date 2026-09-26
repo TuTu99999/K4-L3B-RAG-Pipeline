@@ -7,8 +7,8 @@ from src.task10_generation import generate_with_citation
 load_dotenv()
 
 st.set_page_config(
-    page_title="RAG Chatbot",
-    page_icon="",
+    page_title="Trợ lý Du lịch Việt Nam",
+    page_icon="🧭",
     layout="wide",
 )
 
@@ -16,12 +16,12 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 with st.sidebar:
-    st.title("RAG Chatbot")
-    st.caption("Thay mô tả theo đề tài của nhóm")
+    st.title("Trợ lý Du lịch Việt Nam")
+    st.caption("Dense + BM25 + RRF, fallback và citation kiểm chứng được")
     top_k = st.slider("Số chunks", 3, 10, 5)
 
-st.title("RAG Chatbot")
-st.caption("Thay tiêu đề và hướng dẫn sử dụng")
+st.title("Trợ lý Du lịch Việt Nam")
+st.caption("Hỏi về cẩm nang, ẩm thực và quy định du lịch trong corpus của nhóm")
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -31,10 +31,9 @@ for message in st.session_state.messages:
             with st.expander("Xem nguồn"):
                 for source in message["sources"]:
                     metadata = source.get("metadata", {})
-                    st.markdown(
-                        f"**{metadata.get('title', metadata.get('source', 'Unknown'))}** "
-                        f"({metadata.get('source', 'Unknown')})"
-                    )
+                    title = metadata.get("title", metadata.get("source", "Unknown"))
+                    url = metadata.get("url")
+                    st.markdown(f"**[{title}]({url})**" if url else f"**{title}**")
                     st.caption(
                         f"Phương thức: {source.get('retrieval_method', 'unknown')} | "
                         f"Score: {source.get('score', 0):.4f}"
@@ -65,10 +64,9 @@ if query:
             with st.expander("Xem nguồn"):
                 for source in sources:
                     metadata = source.get("metadata", {})
-                    st.markdown(
-                        f"**{metadata.get('title', metadata.get('source', 'Unknown'))}** "
-                        f"({metadata.get('source', 'Unknown')})"
-                    )
+                    title = metadata.get("title", metadata.get("source", "Unknown"))
+                    url = metadata.get("url")
+                    st.markdown(f"**[{title}]({url})**" if url else f"**{title}**")
                     st.caption(
                         f"Phương thức: {source.get('retrieval_method', 'unknown')} | "
                         f"Score: {source.get('score', 0):.4f}"

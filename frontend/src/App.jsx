@@ -1,5 +1,5 @@
 // src/App.jsx — TravelBot RAG Pipeline UI
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import TabChat from './tabs/TabChat';
 import TabDocuments from './tabs/TabDocuments';
 import TabDebug from './tabs/TabDebug';
@@ -25,11 +25,11 @@ export default function App() {
   // System configuration
   const [config, setConfig] = useState({
     topK: 5,
-    threshold: 0.70,
+    threshold: 0.45,
     provider: 'openai',
-    model: 'gpt-4o-mini',
+    model: 'cx/gpt-5.6-luna',
     usePageindex: false,
-    _clearChat: { current: null },
+    clearChatToken: 0,
   });
 
   // Recent chunks for debug tab sharing
@@ -158,9 +158,9 @@ export default function App() {
               <input
                 type="range"
                 className="config-range-slider"
-                min={0.50}
-                max={0.98}
-                step={0.02}
+                min={0.30}
+                max={0.90}
+                step={0.05}
                 value={config.threshold}
                 onChange={e => handleConfigChange('threshold', Number(e.target.value))}
               />
@@ -175,11 +175,19 @@ export default function App() {
               <select
                 className="config-select"
                 value={config.provider}
-                onChange={e => handleConfigChange('provider', e.target.value)}
+                onChange={e => {
+                  const provider = e.target.value;
+                  const defaults = {
+                    openai: 'cx/gpt-5.6-luna',
+                    gemini: 'gemini-2.0-flash',
+                    anthropic: 'claude-3-5-haiku-latest',
+                  };
+                  setConfig(prev => ({ ...prev, provider, model: defaults[provider] }));
+                }}
               >
-                <option value="openai">OpenAI (GPT-4o-mini)</option>
-                <option value="gemini">Google Gemini (Gemini 1.5)</option>
-                <option value="anthropic">Anthropic Claude (Claude 3.5)</option>
+                <option value="openai">9Router / OpenAI-compatible</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="anthropic">Anthropic Claude</option>
               </select>
             </div>
           </div>
@@ -218,8 +226,7 @@ export default function App() {
             <button
               className="btn-text-action"
               onClick={() => {
-                config._clearChat.current = true;
-                setConfig(prev => ({ ...prev }));
+                setConfig(prev => ({ ...prev, clearChatToken: prev.clearChatToken + 1 }));
               }}
             >
               🗑️ Xóa lịch sử chat
@@ -275,10 +282,6 @@ export default function App() {
           {activeTab === 'chat' && (
             <TabChat
               config={config}
-              onInspectChunk={chunk => {
-                setDebugChunks([chunk]);
-                setActiveTab('debug');
-              }}
               onResultUpdate={handleResultUpdate}
               activeInspector={activeInspector}
               setActiveInspector={setActiveInspector}

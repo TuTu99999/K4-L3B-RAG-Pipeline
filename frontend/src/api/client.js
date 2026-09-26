@@ -1,6 +1,4 @@
 // src/api/client.js — HTTP client with auto-mock fallback for TravelBot RAG
-import { GOLDEN_DATASET } from '../data/mockData';
-
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export async function checkApiHealth() {
@@ -397,20 +395,9 @@ async function post(path, body) {
 }
 
 export const api = {
-  generate: async (query, topK = 5, provider = 'openai', model = '', threshold = 0.70) => {
+  generate: async (query, topK = 5, provider = 'openai', model = '', threshold = 0.45) => {
     try {
-      const data = await post('/generate', { query, top_k: topK, provider, model });
-      if (data?.sources?.length === 0 && data?.answer?.includes('Backend chưa được implement')) {
-        const mock = matchTravelMock(query, threshold);
-        return {
-          answer: mock.answer,
-          sources: (mock.sources || []).slice(0, topK),
-          retrieval_source: mock.fallback_triggered ? 'none' : 'hybrid',
-          confidence: mock.confidence || '0.94',
-          fallback_triggered: mock.fallback_triggered || false,
-          is_mock: true,
-        };
-      }
+      const data = await post('/generate', { query, top_k: topK, provider, model, threshold });
       return data;
     } catch {
       // Backend offline -> Return rich realistic travel mock immediately

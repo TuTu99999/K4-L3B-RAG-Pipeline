@@ -14,8 +14,6 @@ export default function TabAB({ config }) {
   const [running, setRunning] = useState(false);
   const [denseResults, setDenseResults] = useState([]);
   const [hybridResults, setHybridResults] = useState([]);
-  const [activeTab, setActiveTab] = useState('compare');
-
   useEffect(() => {
     runComparison(PRESET_QUERIES[0]);
   }, []);

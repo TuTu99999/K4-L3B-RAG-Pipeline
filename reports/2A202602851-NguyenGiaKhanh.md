@@ -6,6 +6,7 @@
 - Mã học viên: 2A202602851
 - Nhóm: 4aesieunhan
 - Repository/branch: https://github.com/TuTu99999/K4-L3B-RAG-Pipeline/tree/nguyengiakhanh
+- Commit code chính: `4d6da5e` (`khanh commit`)
 
 ## Phần việc đã thực hiện
 
@@ -27,13 +28,14 @@
 - Chạy `python -m src.task4_chunking_indexing`: **`Indexed 648 chunks`**.
 - Contract tests cho Task 4–7: **5 passed**.
 - Query tích hợp `du lich`: dense trả 3 kết quả, BM25 trả 3 kết quả, RRF fuse thành 3 kết quả.
-- Model `BAAI/bge-m3` không tải được trong môi trường offline; đã thêm fallback embedding deterministic 1024 chiều. Khi model có local cache, Sentence Transformers vẫn được ưu tiên.
+- Bản đánh giá chính thức dùng model thật `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`; index có **648 chunks** và không dùng hash fallback.
+- Chạy toàn bộ test trên bản tích hợp cuối: **23 passed**.
 
 ## Điều còn hạn chế
 
-- Hash embedding có chất lượng ngữ nghĩa thấp hơn `BAAI/bge-m3`, nên dùng model thật cho đánh giá chính thức.
+- Hash embedding chỉ dành cho phát triển offline khi bật cờ rõ ràng; bản chạy chính thức yêu cầu sentence-transformer thật.
 - BM25 corpus được nạp khi module import; tài liệu mới thêm trong cùng process cần reload hoặc cập nhật corpus.
-- Chưa có benchmark định lượng riêng về recall và latency.
+- Benchmark A/B định lượng hiện nằm trong `group_project/evaluation/RESULT.md`; chưa có benchmark riêng theo từng loại tài liệu legal/news.
 
 ## Xác nhận đóng góp
 

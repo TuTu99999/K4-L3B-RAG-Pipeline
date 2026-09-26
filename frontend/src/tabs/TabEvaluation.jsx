@@ -13,8 +13,6 @@ export default function TabEvaluation() {
 
   const inDomainCount = GOLDEN_DATASET.filter(qa => qa.category === 'in-domain').length;
   const outDomainCount = GOLDEN_DATASET.filter(qa => qa.category === 'out-of-domain').length;
-  const avgGoldenScore = (GOLDEN_DATASET.reduce((a, b) => a + b.score, 0) / GOLDEN_DATASET.length).toFixed(2);
-
   return (
     <div className="tab-evaluation-container">
       {/* Header Banner */}

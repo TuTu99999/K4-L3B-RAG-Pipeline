@@ -108,7 +108,6 @@ function renderMarkdownContent(content, onCitationClick) {
 
 export default function TabChat({
   config,
-  onInspectChunk,
   onResultUpdate,
   activeInspector,
   setActiveInspector,
@@ -200,13 +199,11 @@ export default function TabChat({
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Hook for clear chat trigger from parent/sidebar
   useEffect(() => {
-    if (config._clearChat?.current) {
+    if (config.clearChatToken > 0) {
       setMessages([]);
-      config._clearChat.current = null;
     }
-  });
+  }, [config.clearChatToken]);
 
   async function handleSend(e, promptQuery) {
     e?.preventDefault();
