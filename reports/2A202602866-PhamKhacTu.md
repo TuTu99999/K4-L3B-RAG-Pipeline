@@ -5,8 +5,7 @@
 - Họ và tên: Phạm Khắc Tú
 - Mã học viên: 2A202602866
 - Nhóm: 4aesieunhan
-- Repository: https://github.com/TuTu99999/K4-L3B-RAG-Pipeline
-- Branch: `phamkhactu`
+- Repository/branch: https://github.com/TuTu99999/K4-L3B-RAG-Pipeline/tree/phamkhactu
 - Commit phần data: `f8b3a1c` (`feat(data): build Vietnamese tourism corpus`)
 
 ## Phần việc đã thực hiện
